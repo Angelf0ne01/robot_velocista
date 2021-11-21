@@ -10,11 +10,14 @@ private:
   float integral;
   float derivativo;
   float error_anterior;
+  float promedio_anterior;
 
   //aux
   float promedio;
   float error;
   float kp_aux, ki_aux, kd_aux;
+  float prom_max=1.76;
+  float prom_min=1.5;
 
 public:
   Pid() {}
@@ -28,7 +31,6 @@ public:
   float getPid(float num, float den)
   {
     promedio = num / den;
-
     error = (promedio - set_point);
     integral += error_anterior;
     derivativo = (error - error_anterior);
@@ -36,7 +38,8 @@ public:
     kp_aux = kp * error;
     kd_aux = kd * derivativo;
     ki_aux = ki * integral;
-    return kp_aux;
+    promedio_anterior=promedio;
+    return kp_aux + ki_aux;
   }
   void setProporcional(float p)
   {
@@ -82,7 +85,7 @@ public:
 
     Serial.print("prom-setpoint:");
     Serial.print(promedio);
-    Serial.println("  ");
+    Serial.print(" - ");
   }
 };
 
@@ -202,12 +205,12 @@ public:
     int pwm_out = pwm;
     if (invert)
     {
-      analogWrite(pin_b, pwm_out - pwm_correction);
+      analogWrite(pin_b, pwm_out + pwm_correction);
       analogWrite(pin_a, LOW);
     }
     else
     {
-      analogWrite(pin_a, pwm_out - pwm_correction);
+      analogWrite(pin_a, pwm_out + pwm_correction);
       analogWrite(pin_b, LOW);
     }
   }
@@ -221,15 +224,16 @@ public:
 class Velocista
 {
 private:
-  int pines[8] = {
-      A0,
-      A1,
+  int pines[4] = {
+      //A0,
+      //A1,
       A2,
       A3,
       A4,
       A5,
-      A6,
-      A7};
+      //A6,
+      //A7
+  };
   const int sensor_quantity = sizeof(pines) / sizeof(int);
   Sensor sensores[8];
   Pid pid = Pid();
@@ -306,6 +310,10 @@ public:
     pid.setProporcional(p);
   }
 
+  void pidSetIntegral(float i)
+  {
+    pid.setIntegral(i);
+  }
   void sensorPrintAll()
   {
     for (int x = 0; x < sensor_quantity; x++)
@@ -316,8 +324,6 @@ public:
       Serial.print(sensor.read());
       Serial.print("  | ");
     }
-
-    Serial.println();
   }
 
   void printPid()
@@ -335,28 +341,48 @@ Velocista velocista;
 Motor ml = Motor(PIN_ML_A, PIN_ML_B);
 Motor mr = Motor(PIN_MR_A, PIN_MR_B);
 
-int duty = 100;
+int duty = 33;
 
 void ActualizarMotores(float pid)
 {
   float ganancia = velocista.getGanancia();
 
-  if (pid < 0)
+  if (pid > 0)
   {
     float pwm = pid * ganancia;
-    float pwm_izq = (duty - pwm);
+    float pwm_izq = (pwm - duty);
+    Serial.print("IZQ-->   ");
 
-    ml.writePwm(pwm_izq);
-    mr.writePwm(duty);
+    Serial.print("mr:");
+    Serial.print(pwm_izq);
+    Serial.print(" | ");
+    Serial.print("ml:");
+    Serial.print(duty);
+    Serial.print(" | ");
+    Serial.print("pwd:");
+    Serial.print(pwm);
+    Serial.print(" | ");
+    mr.writePwm(pwm_izq);
+    ml.writePwm(duty);
   }
   else
   {
     pid = ((-1) * pid);
     float pwm = pid * ganancia;
-    float pwm_der = (duty - pwm);
+    float pwm_der = (pwm - duty);
+    Serial.print("DER-->   ");
+    Serial.print("mr:");
+    Serial.print(duty);
+    Serial.print(" | ");
+    Serial.print("ml:");
+    Serial.print(pwm_der);
+    Serial.print(" | ");
+    Serial.print("pwd:");
+    Serial.print(pwm);
+    Serial.print(" | ");
 
-    ml.writePwm(duty);
-    mr.writePwm(pwm_der);
+    mr.writePwm(duty);
+    ml.writePwm(pwm_der);
   }
 }
 
@@ -379,28 +405,31 @@ void calibrarSensor()
 }
 void setup()
 {
-  Serial.begin(9600);
-  ml.setPwmMax(255);
-  mr.setPwmMax(255);
-  //  calibrarSensor();
+  Serial.begin(9800);
+  ml.setPwmMin(20);
+  mr.setPwmMin(20);
+  ml.pwmCorrection(9);
+
+  ml.setPwmMax(35);
+  mr.setPwmMax(35);
+  calibrarSensor();
+  delay(1000);
   //configuro PID
-  velocista.setSetPoint(4.25);
-  velocista.setPwmGanancia(50);
-  velocista.pidSetProporcional(20);
+  velocista.setSetPoint(1.52);
+  velocista.setPwmGanancia(1);
+  velocista.pidSetProporcional(40);
+  velocista.pidSetIntegral(2);
 }
 
 void loop()
 {
 
-  int pid = velocista.getPid();
+  float pid = velocista.getPid();
   Serial.print("PID:");
   Serial.print(pid);
   Serial.print("   |    ");
   ActualizarMotores(pid);
-  Serial.print("ML:");
-  ml.printPwm();
-  Serial.print("-  MR:");
-  mr.printPwm();
-  Serial.print("   |    ");
   velocista.printPid();
+    velocista.sensorPrintAll();
+  Serial.println("");
 }
