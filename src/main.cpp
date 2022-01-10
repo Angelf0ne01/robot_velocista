@@ -2,7 +2,7 @@
 #include "button/application/Button.h"
 #include "motor/application/Motor.h"
 #include "SensorController/application/SensorController.h"
-
+#include "motor/infraestructure/MotorHardware.h"
 #define BUTTON_PIN A5
 //Motor LEFT
 #define MOTOR_IZQ_PIN_DIR 12
@@ -40,16 +40,16 @@ void ControlMotores()
 
     float pwm_izq = vel_base - pid;
     float pwm_der = vel_base + pid;
-    motor_izq->setSpeed(pwm_izq);
-    motor_der->setSpeed(pwm_der);
+    motor_izq->setPwm(pwm_izq);
+    motor_der->setPwm(pwm_der);
   }
   else
   {
 
     float pwm_izq = vel_base - pid;
     float pwm_der = vel_base + pid;
-    motor_izq->setSpeed(pwm_izq);
-    motor_der->setSpeed(pwm_der);
+    motor_izq->setPwm(pwm_izq);
+    motor_der->setPwm(pwm_der);
   }
 }
 

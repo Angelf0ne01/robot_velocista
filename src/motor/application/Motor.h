@@ -1,13 +1,15 @@
-#include "./../infraestructure/MotorHardware.h"
+#include "./../infraestructure/IMotor.h"
 
+class Motor
+{
+private:
+  IMotor *iMotor;
 
-class Motor {
-    private:
-    MotorHardware *motorHardware;
-  public:
-   ~Motor(); 
-    Motor(MotorHardware *motorHardware);
-    void setSpeed(int speed);    
-    void stop();
-    void setPwmCorrection(int pwmCorrection);
+public:
+  ~Motor();
+  Motor(IMotor *iMotor);
+  virtual void setPwm(int pwm);
+  virtual void setPwmCorrection(int pwmCorrectionValue);
+  virtual void run();
+  virtual void stop();
 };

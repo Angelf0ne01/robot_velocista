@@ -1,14 +1,17 @@
-#include "Arduino.h"
+#include "IMotor.h"
+class MotorHardware : public IMotor
+{
+private:
+  int pin_dir;
+  int pin_pwm;
+  int pwm;
+  int pwm_correction = 0;
 
-class MotorHardware {
-    private:
-    int pin_dir;    
-    int pin_pwm;
-    int pwm_correction=0;
-  public:
-   ~MotorHardware(); 
-    MotorHardware(int pin_dir, int pin_pwm);
-    void setSpeed(int speed);    
-    void stop();
-    void setPwmCorrection(int correction);
+public:
+  virtual ~MotorHardware();
+  MotorHardware(int pin_dir, int pin_pwm);
+  virtual void setPwm(int pwm);
+  virtual void setPwmCorrection(int pwmCorrectionValue);
+  virtual void run();
+  virtual void stop();
 };

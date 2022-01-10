@@ -1,22 +1,26 @@
 #include "Motor.h"
 
 Motor::~Motor() {}
-Motor::Motor(MotorHardware *motorHardware)
+Motor::Motor(IMotor *iMotor)
 {
-    this->motorHardware = motorHardware;
+    this->iMotor = iMotor;
 }
 
-void  Motor::setSpeed(int speed)
+void Motor::setPwm(int pwm)
 {
-    this->motorHardware->setSpeed(speed);
-}
-
-void  Motor::stop()
-{
-    this->motorHardware->stop();
+    this->iMotor->setPwm(pwm);
 }
 
 void Motor::setPwmCorrection(int pwmCorrection)
 {
-    this->motorHardware->setPwmCorrection(pwmCorrection);
+    this->iMotor->setPwmCorrection(pwmCorrection);
+}
+void Motor::run()
+{
+    this->iMotor->run();
+}
+
+void Motor::stop()
+{
+    this->iMotor->stop();
 }
