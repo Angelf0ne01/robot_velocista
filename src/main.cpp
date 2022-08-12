@@ -32,7 +32,7 @@ public:
 
 class Rango
 {
-  int min = sizeof(int);
+  int min = 1024;
   int max = 0;
 
 public:
@@ -149,11 +149,16 @@ public:
 
   int readValueCalibrate()
   {
+    const int MIN_QRE = 0;
+    const int MAX_QRE = 1000;
+
     int value = this->readValue();
     if (value >= this->rango->getMax())
       value = this->rango->getMax();
     else if (value <= this->rango->getMin())
       value = this->rango->getMin();
+
+    value = map(value, this->rango->getMin(), this->rango->getMax(), MIN_QRE, MAX_QRE); // MIN_QRE = 0 & MAX_QRE=1000
 
     return value;
   }
@@ -169,7 +174,8 @@ public:
 #define MOTOR_DER_PIN_DIR 10
 #define MOTOR_DER_PIN_PWM 11
 // pwm
-#define MIN_PWM 40
+#define MIN_PWM 25
+#define PWM_BASE 40
 #define MAX_PWM 50
 /********* SENSORS *********/
 #define PIN_SENSOR_0 A0
@@ -182,7 +188,7 @@ public:
 #define PIN_SENSOR_7 A7
 
 /********* SENSORS *********/
-#define SET_POINT 3.4
+#define SET_POINT 4.5
 #define KP 10
 #define KD 2
 #define KI 1
@@ -191,17 +197,17 @@ public:
 Motor *motor_left = new Motor(MOTOR_IZQ_PIN_DIR, MOTOR_IZQ_PIN_PWM);
 Motor *motor_right = new Motor(MOTOR_DER_PIN_DIR, MOTOR_DER_PIN_PWM);
 Button *btn = new Button(BUTTON_PIN);
-int pwm_min = MIN_PWM;
+
 // Sensores
 int pin_sensor[] = {
-    PIN_SENSOR_0,
-    PIN_SENSOR_1,
-    PIN_SENSOR_2,
-    PIN_SENSOR_3,
-    PIN_SENSOR_4,
-    PIN_SENSOR_5,
-    PIN_SENSOR_6,
     PIN_SENSOR_7,
+    PIN_SENSOR_6,
+    PIN_SENSOR_5,
+    PIN_SENSOR_4,
+    PIN_SENSOR_3,
+    PIN_SENSOR_2,
+    PIN_SENSOR_1,
+    PIN_SENSOR_0,
 };
 const byte sensoresLength = sizeof(pin_sensor) / sizeof(int);
 Rango *rango = new Rango();
@@ -221,13 +227,17 @@ void sensorInitInstance()
 
 void calibrarSensores()
 {
-  Serial.print("Calibrando...");
   for (int idx = 0; idx < sensoresLength; idx++)
   {
     Sensor *sensor = sensores[idx];
     sensor->calibrate();
+    Serial.print("calibrando->");
+    Serial.print("min:");
+    Serial.print(rango->getMin());
+    Serial.print(" - max:");
+    Serial.print(rango->getMax());
+    Serial.println("");
   }
-  Serial.println("");
 }
 
 float promedioPonderado()
@@ -281,7 +291,7 @@ void setup()
   motor_left->setMaxPwm(MAX_PWM);
   motor_right->setMaxPwm(MAX_PWM);
   // correccion de rpm entre un motor y  el otro
-  motor_left->setPwmCorrection(9);
+  motor_left->setPwmCorrection(15);
 
   sensorInitInstance();
 
@@ -295,7 +305,7 @@ void setup()
 unsigned long tiempo_actual = 0;
 // pid
 float integral, error_anterior, promedio_anterior;
-float kp = 20;
+float kp = 12;
 float kd = 0;
 float ki = 2;
 
@@ -315,31 +325,24 @@ void loop()
   float kd_aux = kd * derivativo;
   float ki_aux = ki * integral;
   promedio_anterior = promedio;
-  float pid = kp_aux + ki_aux;
+  float pid = kp_aux;
 
   printSensor();
 
   int pwm_izq = 0;
   int pwm_der = 0;
-  if (pid > 0)
-  {
-    pwm_der = MIN_PWM + pid;
-    pwm_izq = MIN_PWM - pid;
-    // disminuyo la velocidad del motor izq
-    motor_right->setPwm(pwm_der);
-    motor_left->setPwm(pwm_izq);
-  }
-  else
-  {
-    pid = ((-1) * pid);
-    pwm_der = MIN_PWM - pid;
-    pwm_izq = MIN_PWM + pid;
-    // disminuyo la velocidad del motor izq
-    motor_left->setPwm(pwm_izq);
-    motor_right->setPwm(pwm_der);
-  }
-  Serial.print("rango->");
-  Serial.print(rango->getMin());
+
+  pwm_der = PWM_BASE - pid;
+  pwm_izq = PWM_BASE + pid;
+  // disminuyo la velocidad del motor izq
+  motor_right->setPwm(pwm_der);
+  motor_left->setPwm(pwm_izq);
+
+  Serial.print("| M:<--");
+  Serial.print(pwm_izq);
+  Serial.print(" - M:-->");
+  Serial.print(pwm_der);
+
   motor_left->moveUp();
   motor_right->moveUp();
   Serial.println("");
