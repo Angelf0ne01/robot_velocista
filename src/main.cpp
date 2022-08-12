@@ -200,6 +200,7 @@ int pin_sensor[] = {
     PIN_SENSOR_3,
     PIN_SENSOR_4,
     PIN_SENSOR_5,
+    PIN_SENSOR_6,
     PIN_SENSOR_7,
 };
 const byte sensoresLength = sizeof(pin_sensor) / sizeof(int);
@@ -226,6 +227,7 @@ void calibrarSensores()
     Sensor *sensor = sensores[idx];
     sensor->calibrate();
   }
+  Serial.println("");
 }
 
 float promedioPonderado()
@@ -336,7 +338,9 @@ void loop()
     motor_left->setPwm(pwm_izq);
     motor_right->setPwm(pwm_der);
   }
-
+  Serial.print("rango->");
+  Serial.print(rango->getMin());
   motor_left->moveUp();
   motor_right->moveUp();
+  Serial.println("");
 }
