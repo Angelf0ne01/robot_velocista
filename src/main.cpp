@@ -1,6 +1,85 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 
+class Debug
+{
+
+  bool disabled = false;
+
+public:
+  Debug()
+  {
+    Serial.begin(9600);
+  }
+
+  void Disabled()
+  {
+    disabled = true;
+  }
+  void print(int msg)
+  {
+    if (!disabled)
+      Serial.print(msg);
+  }
+  void print(bool msg)
+  {
+    if (!disabled)
+      Serial.print(msg);
+  }
+  void print(float msg)
+  {
+    if (!disabled)
+      Serial.print(msg);
+  }
+  void print(String msg)
+  {
+    if (!disabled)
+      Serial.print(msg);
+  }
+  void print(char msg)
+  {
+    if (!disabled)
+      Serial.print(msg);
+  }
+
+  void print(const char *msg)
+  {
+    if (!disabled)
+      Serial.print(msg);
+  }
+  // println
+  void println(int msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+  void println(bool msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+  void println(float msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+  void println(String msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+  void println(char msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+  void println(const char *msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+};
+
 class Button
 {
   int pin;
@@ -193,6 +272,7 @@ public:
 #define KD 2
 #define KI 1
 
+Debug debug;
 // Motores
 Motor *motor_left = new Motor(MOTOR_IZQ_PIN_DIR, MOTOR_IZQ_PIN_PWM);
 Motor *motor_right = new Motor(MOTOR_DER_PIN_DIR, MOTOR_DER_PIN_PWM);
@@ -231,12 +311,12 @@ void calibrarSensores()
   {
     Sensor *sensor = sensores[idx];
     sensor->calibrate();
-    Serial.print("calibrando->");
-    Serial.print("min:");
-    Serial.print(rango->getMin());
-    Serial.print(" - max:");
-    Serial.print(rango->getMax());
-    Serial.println("");
+    debug.print("calibrando->");
+    debug.print("min:");
+    debug.print(rango->getMin());
+    debug.print(" - max:");
+    debug.print(rango->getMax());
+    debug.println("");
   }
 }
 
@@ -266,12 +346,12 @@ void printSensor()
   for (int idx = 0; idx < sensoresLength; idx++)
   {
 
-    Serial.print("s");
-    Serial.print(idx);
-    Serial.print(":");
+    debug.print("s");
+    debug.print(idx);
+    debug.print(":");
     Sensor *sensor = sensores[idx];
-    Serial.print(sensor->readValueCalibrate());
-    Serial.print(" - ");
+    debug.print(sensor->readValueCalibrate());
+    debug.print(" - ");
   }
 }
 
@@ -280,9 +360,13 @@ void printSensor()
 
 SoftwareSerial bt(BT_RX, BT_TX);
 
+const float PROMEDIO_MAX = 5;
+const float PROMEDIO_MIN = 1;
+
 void setup()
 {
-  Serial.begin(9600);
+  debug = Debug();
+  debug.Disabled();
   bt.begin(9600);
 
   // configuro los maximos y minimos (default max =  255 and min = 0 );
@@ -304,23 +388,32 @@ void setup()
 
 unsigned long tiempo_actual = 0;
 // pid
+
 float integral, error_anterior, promedio_anterior;
+float promedio;
 float kp = 12;
 float kd = 0;
-float ki = 2;
+float ki = 1;
 
 int ganancia = 1;
 int duty = 10;
 
+// borde
+
 void loop()
 {
 
-  float promedio = promedioPonderado();
+  promedio = promedioPonderado();
+
+  if (promedio <= PROMEDIO_MIN || promedio > PROMEDIO_MAX)
+  {
+    promedio = promedio_anterior;
+  }
 
   float error = (promedio - SET_POINT);
   integral += error_anterior;
   float derivativo = (error - error_anterior);
-  float error_anterior = error;
+  error_anterior = error;
   float kp_aux = kp * error;
   float kd_aux = kd * derivativo;
   float ki_aux = ki * integral;
@@ -338,12 +431,15 @@ void loop()
   motor_right->setPwm(pwm_der);
   motor_left->setPwm(pwm_izq);
 
-  Serial.print("| M:<--");
-  Serial.print(pwm_izq);
-  Serial.print(" - M:-->");
-  Serial.print(pwm_der);
+  debug.print("| M:<--");
+  debug.print(pwm_izq);
+  debug.print(" - M:-->");
+  debug.print(pwm_der);
+
+  debug.print("| PROM:");
+  debug.print(promedio);
 
   motor_left->moveUp();
   motor_right->moveUp();
-  Serial.println("");
+  debug.println("");
 }
