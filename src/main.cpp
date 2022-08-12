@@ -30,16 +30,37 @@ public:
   }
 };
 
+class Rango
+{
+  int min = sizeof(int);
+  int max = 0;
+
+public:
+  void setMax(int max)
+  {
+    this->max = max;
+  }
+  void setMin(int min)
+  {
+    this->min = min;
+  }
+
+  int getMax()
+  {
+    return this->max;
+  }
+  int getMin()
+  {
+    return this->min;
+  }
+};
 class Motor
 {
   int pin_dir;
   int pin_pwm;
   int pwm_value = 0;
 
-  // ajust
-
-  int pwm_min = 0;
-  int pwm_max = 255;
+  Rango *pwmRango = new Rango();
   int pwm_correction = 0;
 
 public:
@@ -47,6 +68,7 @@ public:
   {
     this->pin_dir = pin_dir;
     this->pin_pwm = pin_pwm;
+
     pinMode(pin_dir, OUTPUT);
     pinMode(pin_pwm, OUTPUT);
   }
@@ -69,12 +91,12 @@ public:
 
   void setMinPwm(int pwm)
   {
-    this->pwm_min = pwm;
+    this->pwmRango->setMin(pwm);
   }
 
   void setMaxPwm(int pwm)
   {
-    this->pwm_max = pwm;
+    this->pwmRango->setMax(pwm);
   }
 
   void setPwmCorrection(int pwm)
@@ -85,11 +107,11 @@ public:
   int getPwm()
   {
     // set min pwm
-    if (this->pwm_value <= this->pwm_min)
-      this->pwm_value = this->pwm_min;
+    if (this->pwm_value <= this->pwmRango->getMin())
+      this->pwm_value = this->pwmRango->getMin();
     // set max pwm
-    if (this->pwm_value >= this->pwm_max)
-      this->pwm_value = this->pwm_max;
+    if (this->pwm_value >= this->pwmRango->getMax())
+      this->pwm_value = this->pwmRango->getMax();
     return this->pwm_value;
   }
 };
@@ -98,16 +120,16 @@ class Sensor
 {
   int pin;
   int value;
-  int min;
-  int max;
+  Rango *rango;
 
 public:
-  Sensor(int pin)
+  Sensor(int pin, Rango *rango)
   {
     this->pin = pin;
-    // default value
-    this->min = 255;
-    this->max = 0;
+    // No se puede crear variables del tipo static
+    // Creo una instancia unica de "Rango" y se las inyecto a las diferentes instancias de los sensores
+    // de esta forma, hay 1 sola instancia de rango, para multiples sensores.
+    this->rango = rango; // DI -> dependency injection
     pinMode(this->pin, INPUT);
   }
 
@@ -119,19 +141,19 @@ public:
   void calibrate()
   {
     int value = this->readValue();
-    if (value >= max)
-      max = value;
-    else if (value <= min)
-      min = value;
+    if (value >= this->rango->getMax())
+      this->rango->setMax(value);
+    else if (value <= this->rango->getMin())
+      this->rango->setMin(value);
   }
 
   int readValueCalibrate()
   {
     int value = this->readValue();
-    if (value >= max)
-      value = max;
-    else if (value <= min)
-      value = min;
+    if (value >= this->rango->getMax())
+      value = this->rango->getMax();
+    else if (value <= this->rango->getMin())
+      value = this->rango->getMin();
 
     return value;
   }
@@ -181,6 +203,7 @@ int pin_sensor[] = {
     PIN_SENSOR_7,
 };
 const byte sensoresLength = sizeof(pin_sensor) / sizeof(int);
+Rango *rango = new Rango();
 Sensor *sensores[sensoresLength];
 
 void sensorInitInstance()
@@ -191,7 +214,7 @@ void sensorInitInstance()
     // obtengo el pin
     int pin = pin_sensor[idx];
     // instancio el sensor
-    sensores[idx] = new Sensor(pin);
+    sensores[idx] = new Sensor(pin, rango);
   }
 }
 
