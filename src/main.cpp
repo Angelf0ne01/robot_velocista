@@ -350,7 +350,7 @@ public:
 
 /********* SENSORS *********/
 const float SET_POINT = 4.5;
-#define KP 100
+#define KP 10
 #define KD 2
 #define KI 1
 
