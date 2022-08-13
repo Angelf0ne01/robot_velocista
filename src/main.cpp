@@ -80,6 +80,88 @@ public:
   }
 };
 
+class DebugBt
+{
+  const int BT_RX = 3;
+  const int BT_TX = 2;
+
+  SoftwareSerial SerialBt = SoftwareSerial(BT_RX, BT_TX);
+  bool disabled = false;
+
+public:
+  DebugBt()
+  {
+    SerialBt.begin(9600);
+  }
+
+  void Disabled()
+  {
+    disabled = true;
+  }
+  void print(int msg)
+  {
+    if (!disabled)
+      SerialBt.print(msg);
+  }
+  void print(bool msg)
+  {
+    if (!disabled)
+      SerialBt.print(msg);
+  }
+  void print(float msg)
+  {
+    if (!disabled)
+      SerialBt.print(msg);
+  }
+  void print(String msg)
+  {
+    if (!disabled)
+      SerialBt.print(msg);
+  }
+  void print(char msg)
+  {
+    if (!disabled)
+      SerialBt.print(msg);
+  }
+
+  void print(const char *msg)
+  {
+    if (!disabled)
+      Serial.print(msg);
+  }
+  // println
+  void println(int msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+  void println(bool msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+  void println(float msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+  void println(String msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+  void println(char msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+  void println(const char *msg)
+  {
+    if (!disabled)
+      Serial.println(msg);
+  }
+};
+
 class Button
 {
   int pin;
@@ -267,8 +349,8 @@ public:
 #define PIN_SENSOR_7 A7
 
 /********* SENSORS *********/
-#define SET_POINT 4.5
-#define KP 10
+const float SET_POINT = 4.5;
+#define KP 100
 #define KD 2
 #define KI 1
 
@@ -355,11 +437,6 @@ void printSensor()
   }
 }
 
-#define BT_RX 3
-#define BT_TX 2
-
-SoftwareSerial bt(BT_RX, BT_TX);
-
 const float PROMEDIO_MAX = 5;
 const float PROMEDIO_MIN = 1;
 
@@ -367,7 +444,6 @@ void setup()
 {
   debug = Debug();
   debug.Disabled();
-  bt.begin(9600);
 
   // configuro los maximos y minimos (default max =  255 and min = 0 );
   motor_left->setMinPwm(MIN_PWM);
@@ -439,6 +515,14 @@ void loop()
   debug.print("| PROM:");
   debug.print(promedio);
 
+  debug.print("| PROM:");
+  debug.print(promedio);
+
+  debug.print("| pid:");
+  debug.print(pid);
+
+  debug.print("| error:");
+  debug.print(error);
   motor_left->moveUp();
   motor_right->moveUp();
   debug.println("");
