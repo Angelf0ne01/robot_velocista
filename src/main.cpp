@@ -85,13 +85,13 @@ class DebugBt
   const int BT_RX = 3;
   const int BT_TX = 2;
 
-  SoftwareSerial SerialBt = SoftwareSerial(BT_RX, BT_TX);
+  SoftwareSerial *SerialBt = new SoftwareSerial(BT_RX, BT_TX);
   bool disabled = false;
 
 public:
   DebugBt()
   {
-    SerialBt.begin(9600);
+    SerialBt->begin(9600);
   }
 
   void Disabled()
@@ -101,27 +101,27 @@ public:
   void print(int msg)
   {
     if (!disabled)
-      SerialBt.print(msg);
+      SerialBt->print(msg);
   }
   void print(bool msg)
   {
     if (!disabled)
-      SerialBt.print(msg);
+      SerialBt->print(msg);
   }
   void print(float msg)
   {
     if (!disabled)
-      SerialBt.print(msg);
+      SerialBt->print(msg);
   }
   void print(String msg)
   {
     if (!disabled)
-      SerialBt.print(msg);
+      SerialBt->print(msg);
   }
   void print(char msg)
   {
     if (!disabled)
-      SerialBt.print(msg);
+      SerialBt->print(msg);
   }
 
   void print(const char *msg)
@@ -133,32 +133,32 @@ public:
   void println(int msg)
   {
     if (!disabled)
-      Serial.println(msg);
+      SerialBt->println(msg);
   }
   void println(bool msg)
   {
     if (!disabled)
-      Serial.println(msg);
+      SerialBt->println(msg);
   }
   void println(float msg)
   {
     if (!disabled)
-      Serial.println(msg);
+      SerialBt->println(msg);
   }
   void println(String msg)
   {
     if (!disabled)
-      Serial.println(msg);
+      SerialBt->println(msg);
   }
   void println(char msg)
   {
     if (!disabled)
-      Serial.println(msg);
+      SerialBt->println(msg);
   }
   void println(const char *msg)
   {
     if (!disabled)
-      Serial.println(msg);
+      SerialBt->println(msg);
   }
 };
 
@@ -336,8 +336,8 @@ public:
 #define MOTOR_DER_PIN_PWM 11
 // pwm
 #define MIN_PWM 25
-#define PWM_BASE 40
-#define MAX_PWM 50
+#define PWM_BASE 200
+#define MAX_PWM 255
 /********* SENSORS *********/
 #define PIN_SENSOR_0 A0
 #define PIN_SENSOR_1 A1
@@ -350,9 +350,9 @@ public:
 
 /********* SENSORS *********/
 const float SET_POINT = 4.5;
-#define KP 10
-#define KD 2
-#define KI 1
+const int KP = 30;
+const int KD = 2;
+const int KI = 20;
 
 Debug debug;
 // Motores
@@ -443,7 +443,7 @@ const float PROMEDIO_MIN = 1;
 void setup()
 {
   debug = Debug();
-  debug.Disabled();
+  //debug.Disabled();
 
   // configuro los maximos y minimos (default max =  255 and min = 0 );
   motor_left->setMinPwm(MIN_PWM);
@@ -467,9 +467,6 @@ unsigned long tiempo_actual = 0;
 
 float integral, error_anterior, promedio_anterior;
 float promedio;
-float kp = 12;
-float kd = 0;
-float ki = 1;
 
 int ganancia = 1;
 int duty = 10;
@@ -490,11 +487,11 @@ void loop()
   integral += error_anterior;
   float derivativo = (error - error_anterior);
   error_anterior = error;
-  float kp_aux = kp * error;
-  float kd_aux = kd * derivativo;
-  float ki_aux = ki * integral;
+  float kp_aux = KP * error;
+  float kd_aux = KD * derivativo;
+  float ki_aux = KI * integral;
   promedio_anterior = promedio;
-  float pid = kp_aux;
+  float pid = kp_aux + kd_aux;
 
   printSensor();
 
@@ -503,6 +500,7 @@ void loop()
 
   pwm_der = PWM_BASE - pid;
   pwm_izq = PWM_BASE + pid;
+
   // disminuyo la velocidad del motor izq
   motor_right->setPwm(pwm_der);
   motor_left->setPwm(pwm_izq);
